@@ -2,7 +2,7 @@ import json
 
 import requests
 
-from decorators import refresh_token_on_expiry
+from .decorators import refresh_token_on_expiry
 
 
 class PassfortressClient:
