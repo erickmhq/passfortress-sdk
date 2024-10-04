@@ -23,7 +23,7 @@ class PassfortressClient:
 
     ENDPOINTS_URLS = {
         HELLO: "/api/api-hello/",
-        REQUEST_TOKEN: "/api/api-auth_request-token/",
+        REQUEST_TOKEN: "/api/api-auth-request-token/",
         REFRESH_TOKEN: "/api/api-auth-refresh-token/",
         GET_SECRET: "/api/api-get-secret/",
         GET_SECRETS: "/api/api-get-secrets/",
