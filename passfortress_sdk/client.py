@@ -22,18 +22,18 @@ class PassfortressClient:
     SHARE_SECRET = "share_secret"
 
     ENDPOINTS_URLS = {
-        HELLO: "/api/api-hello/",
-        REQUEST_TOKEN: "/api/api-auth-request-token/",
-        REFRESH_TOKEN: "/api/api-auth-refresh-token/",
-        GET_SECRET: "/api/api-get-secret/",
-        GET_SECRETS: "/api/api-get-secrets/",
-        ADD_SECRET: "/api/api-add-secret/",
-        ACCEPT_SHARED_SECRET: "/api/api-accept-shared-secret/",
-        GET_CONTAINERS: "/api/api-get-containers/",
-        ADD_CONTAINER: "/api/api-add-container/",
-        UPDATE_SECRET: "/api/api-update-secret/",
-        DUPLICATE_SECRET: "/api/api-duplicate-secret/",
-        SHARE_SECRET: "/api/api-share-secret/",
+        HELLO: "/api/hello/",
+        REQUEST_TOKEN: "/api/auth/request-token/",
+        REFRESH_TOKEN: "/api/auth/refresh-token/",
+        GET_SECRET: "/api/get-secret/",
+        GET_SECRETS: "/api/get-secrets/",
+        ADD_SECRET: "/api/add-secret/",
+        ACCEPT_SHARED_SECRET: "/api/accept-shared-secret/",
+        GET_CONTAINERS: "/api/get-containers/",
+        ADD_CONTAINER: "/api/add-container/",
+        UPDATE_SECRET: "/api/update-secret/",
+        DUPLICATE_SECRET: "/api/duplicate-secret/",
+        SHARE_SECRET: "/api/share-secret/",
     }
 
     def __init__(self, api_key, secret_key, master_key, host="app.passfortress.com"):
