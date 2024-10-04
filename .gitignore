@@ -1,0 +1,38 @@
+# Byte-compiled files
+*.pyc
+__pycache__/
+
+# Log and report files
+*.log
+*.xml
+
+# Environment and IDE folders
+.env
+.venv/
+.idea/
+.python-version
+
+# Cache and backup files
+*.bak
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Coverage
+htmlcov/
+.coverage
+.coveragerc
+
+# Pypi-specific
+*.pot
+*.egg-info/
+#dist/
+build/
+*.egg
+local_settings.py
+
+# pytest
+.pytest_cache/
