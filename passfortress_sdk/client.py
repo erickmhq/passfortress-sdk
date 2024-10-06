@@ -10,11 +10,12 @@ class PassfortressClient:
     HELLO = "hello"
     REQUEST_TOKEN = "request_token"
     REFRESH_TOKEN = "refresh_token"
-    GET_SECRET = "get_secret"
     GET_SECRETS = "get_secrets"
+    GET_SECRET = "get_secret"
     ADD_SECRET = "add_secret"
     ACCEPT_SHARED_SECRET = "accept_shared_secret"
     GET_CONTAINERS = "get_containers"
+    GET_CONTAINER = "get_container"
     ADD_CONTAINER = "add_container"
     UPDATE_CONTAINER = "update_container"
     UPDATE_SECRET = "update_secret"
@@ -25,11 +26,12 @@ class PassfortressClient:
         HELLO: "/api/hello/",
         REQUEST_TOKEN: "/api/auth/request-token/",
         REFRESH_TOKEN: "/api/auth/refresh-token/",
-        GET_SECRET: "/api/get-secret/",
         GET_SECRETS: "/api/get-secrets/",
+        GET_SECRET: "/api/get-secret/",
         ADD_SECRET: "/api/add-secret/",
         ACCEPT_SHARED_SECRET: "/api/accept-shared-secret/",
         GET_CONTAINERS: "/api/get-containers/",
+        GET_CONTAINER: "/api/get-container/",
         ADD_CONTAINER: "/api/add-container/",
         UPDATE_SECRET: "/api/update-secret/",
         DUPLICATE_SECRET: "/api/duplicate-secret/",
@@ -100,6 +102,19 @@ class PassfortressClient:
 
     @refresh_token_on_expiry
     def get_secret(self, secret_uuid):
+        """
+        Retrieves a secret from the API using its UUID.
+
+        Args:
+            secret_uuid (str): The UUID of the secret to retrieve.
+
+        Returns:
+            requests.Response: The response object from the API containing the secret's
+            details or an error message.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
         endpoint_url = self._endpoint_url(self.GET_SECRET)
         headers = self._build_authorization_bearer()
         payload = {
@@ -117,6 +132,37 @@ class PassfortressClient:
 
     @refresh_token_on_expiry
     def add_secret(self, secret_data):
+        """
+        Adds a new secret to the API.
+
+        Args:
+            secret_data (dict): The secret data to be added. The dictionary contains the following keys:
+
+                - secret_type (str): **Required**. One of ["password", "envfile"].
+                - name (str): Optional. The name of the secret.
+                - containers (list of dict): Optional. A list of containers to associate with the secret.
+                    Each container dictionary must include:
+
+                    - uuid (str): **Required**. The UUID of the container.
+
+                - url (str): **Required if secret_type == "password"**. The URL associated with the password.
+                - value (str): The value of the secret (e.g., password, .env file content, ...).
+                - notes (str): Optional. Additional notes about the secret.
+                - identifiers (list of dict): **Required if secret_type == "password"**. A list of key-value pairs to
+                identify the secret.
+                    Each identifier dictionary must include:
+
+                    - key (str): **Required**. The identifier key.
+                    - value (str): **Required**. The identifier value.
+
+        Returns:
+            requests.Response: The response object from the API containing the result of the
+            operation, such as success confirmation or an error message.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
         endpoint_url = self._endpoint_url(self.ADD_SECRET)
 
         # payload definition
@@ -134,6 +180,23 @@ class PassfortressClient:
 
     @refresh_token_on_expiry
     def accept_shared_secret(self, secret_data, tmp_master_key):
+        """
+        Accepts a shared secret using a temporary master key.
+
+        Args:
+            secret_data (dict): The secret data containing the following key:
+
+                - uuid (str): **Required**. The UUID of the shared secret.
+
+            tmp_master_key (str): **Required**. A temporary master key used to decrypt the shared secret.
+
+        Returns:
+            requests.Response: The response object from the API containing the result of the operation,
+            such as success confirmation or an error message.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
         endpoint_url = self._endpoint_url(self.ADD_SECRET)
 
         # payload definition
@@ -151,16 +214,32 @@ class PassfortressClient:
         return response
 
     @refresh_token_on_expiry
-    def get_containers(self, container_name):
+    def get_containers(self, container_data):
+        """
+        Retrieves a list of containers from the API.
+
+        Args:
+            container_data (dict): The container data used to filter the results, containing
+            the following keys:
+
+                - name (str): Optional. The name of the container to filter by.
+                - description (str): Optional. The description (partial or total) of the container to filter by.
+
+        Returns:
+            requests.Response: The response object from the API containing the list of containers
+            matching the provided filters or an error message if the request fails.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
         endpoint_url = self._endpoint_url(self.GET_CONTAINERS)
 
         # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
-            "container": {
-                "name": container_name
-            },
+            "container": container_data
         }
         response = requests.post(
             url=endpoint_url,
@@ -170,18 +249,62 @@ class PassfortressClient:
         return response
 
     @refresh_token_on_expiry
-    def add_container(self, name, description):
+    def get_container(self, container_uuid):
+        """
+        Retrieves a container from the API using its UUID.
+
+        Args:
+            container_uuid (str): The UUID of the container to retrieve.
+
+        Returns:
+            requests.Response: The response object from the API containing the container's
+            details or an error message.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+        endpoint_url = self._endpoint_url(self.GET_CONTAINER)
+        headers = self._build_authorization_bearer()
+        payload = {
+            "api_key": self.api_key,
+            "master_key": self.master_key,
+            "container": {"uuid": container_uuid},
+        }
+
+        response = requests.post(
+            url=endpoint_url,
+            headers=headers,
+            json=payload,
+        )
+        return response
+
+    @refresh_token_on_expiry
+    def add_container(self, container_data):
         endpoint_url = self._endpoint_url(self.ADD_CONTAINER)
+        """
+        Add a new container to the API.
+
+        Args:
+            container_data (dict): The container data to create, containing the following keys:
+
+                - name (str): **Required**. The name of the container.
+                - description (str): Optional. A description of the container.
+
+        Returns:
+            requests.Response: The response object from the API containing the result of the
+            update operation, such as success confirmation or an error message.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
 
         # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
-            "container": {
-                "name": name,
-                "description": description
-            },
+            "container": container_data
         }
+
         response = requests.post(
             url=endpoint_url,
             headers=self._build_authorization_bearer(),
@@ -190,18 +313,36 @@ class PassfortressClient:
         return response
 
     @refresh_token_on_expiry
-    def update_container(self, container_uuid, name, description):
+    def update_container(self, container_data):
+        """
+        Updates an existing container in the API.
+
+        This method sends a POST request to the API endpoint to update an existing container. The
+        request includes an API key, a master key, and the container data in the payload for
+        authorization and container details.
+
+        Args:
+            container_data (dict): The container data to update, containing the following keys:
+
+                - uuid (str): **Required**. The UUID of the container to be updated.
+                - name (str): **Required**. The name of the container.
+                - description (str): Optional. A description of the container.
+
+        Returns:
+            requests.Response: The response object from the API containing the result of the
+            update operation, such as success confirmation or an error message.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
         endpoint_url = self._endpoint_url(self.UPDATE_CONTAINER)
 
         # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
-            "container": {
-                "uuid": container_uuid,
-                "name": name,
-                "description": description
-            },
+            "container": container_data,
         }
         response = requests.post(
             url=endpoint_url,
@@ -211,33 +352,41 @@ class PassfortressClient:
         return response
 
     @refresh_token_on_expiry
-    def update_secret(self, **secret_data):
+    def update_secret(self, secret_data):
+        """
+        Updates an existing secret in the API.
+
+        Args:
+            secret_data (dict): The secret data to update, containing the following keys:
+
+                - uuid (str): **Required**. The UUID of the secret to be updated.
+                - secret_type (str): Optional. The type of the secret, either "password" or "envfile".
+                - name (str): Optional. The name of the secret.
+                - containers (list of dict): Optional. A list of containers to associate with the secret.
+                    Each container dictionary must include:
+
+                    - uuid (str): **Required**. The UUID of the container.
+
+                - url (str): Optional. The URL associated with the secret, required only if
+                  `secret_type == "password"`.
+                - value (str): **Required**. The decrypted value of the secret.
+                - notes (str): Optional. Additional notes about the secret.
+                - identifiers (list of dict): Optional. A list of key-value pairs to identify the secret,
+                required only if `secret_type == "password"`.
+                    Each identifier dictionary must include:
+
+                    - key (str): **Required**. The identifier key.
+                    - value (str): **Required**. The identifier value.
+
+        Returns:
+            requests.Response: The response object from the API containing the result of the
+            update operation, such as success confirmation or an error message.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
         endpoint_url = self._endpoint_url(self.UPDATE_SECRET)
-
-        # payload definition
-        payload = {
-            "api_key": self.api_key,
-            "master_key": self.master_key,
-            "secret": {
-                "uuid": secret_data.get("uuid"),
-                "name": secret_data.get("name"),
-                "containers": secret_data.get("containers"),
-                "url": secret_data.get("url"),
-                "value": secret_data.get("value"),
-                "notes": secret_data.get("notes"),
-                "identifiers": secret_data.get("identifiers"),
-            },
-        }
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
-        )
-        return response
-
-    @refresh_token_on_expiry
-    def get_secrets(self, secret_data):
-        endpoint_url = self._endpoint_url(self.GET_SECRETS)
 
         # payload definition
         payload = {
@@ -253,7 +402,75 @@ class PassfortressClient:
         return response
 
     @refresh_token_on_expiry
+    def get_secrets(self, secret_data):
+        """
+        Retrieves a list of secrets from the API based on the provided filters.
+
+        Args:
+            secret_data (dict): The secret data used to filter the results, containing
+            the following keys:
+
+                - secret_type (str): **Required**. The type of the secret, one of ["password", "envfile"].
+                - name (str): Optional. The name of the secret to filter by.
+                - url (str): Optional. The URL associated with the secret, relevant only if `secret_type == "password"`.
+                - website (dict): Optional. Information about the website, relevant only if `secret_type == "password"`.
+                Contains the following keys:
+                    - uuid (str): Optional. The UUID of the website.
+                    - hostname (str): Optional. The hostname of the website.
+                    - login_url (str): Optional. The login URL for the website.
+                    - automatic_password_change (bool): Optional. Whether the website supports automatic password change.
+                - containers (list of dict): Optional. A list of containers associated with the secret.
+                Each container dictionary can include:
+                    - uuid (str): Optional. The UUID of the container.
+                    - name (str): Optional. The name of the container.
+                    - description (str): Optional. The description of the container.
+                - identifiers (list of dict): Optional. A list of identifiers, only if `secret_type == "password"`.
+                Each identifier dictionary can include:
+                    - uuid (str): Optional. The UUID of the identifier.
+                    - key (str): Optional. The identifier key.
+                    - value (str): Optional. The identifier value.
+                - shared (bool): Optional. Whether to retrieve shared secrets. Defaults to `False`.
+
+        Returns:
+            requests.Response: The response object from the API containing the list of secrets
+            matching the provided filters or an error message if the request fails.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
+        endpoint_url = self._endpoint_url(self.GET_SECRETS)
+
+        # payload definition
+        payload = {
+            "api_key": self.api_key,
+            "master_key": self.master_key,
+            "secret": secret_data,
+        }
+
+        response = requests.post(
+            url=endpoint_url,
+            headers=self._build_authorization_bearer(),
+            json=payload,
+        )
+        return response
+
+    @refresh_token_on_expiry
     def duplicate_secret(self, secret_uuid):
+        """
+        Duplicates an existing secret in the API.
+
+        Args:
+            secret_uuid (str): The UUID of the secret to duplicate.
+
+        Returns:
+            requests.Response: The response object from the API containing the duplicated secret
+            details or an error message if the request fails.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
         endpoint_url = self._endpoint_url(self.DUPLICATE_SECRET)
 
         # payload definition
@@ -273,6 +490,21 @@ class PassfortressClient:
 
     @refresh_token_on_expiry
     def share_secret(self, secret_uuid, emails_list):
+        """
+        Share an existing secret in the API.
+
+        Args:
+            secret_uuid (str): The UUID of the secret to share.
+            emails_list (list of str): The list of emails to share with.
+
+        Returns:
+            requests.Response: The response object from the API containing the shared secret
+            details or an error message if the request fails.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
         endpoint_url = self._endpoint_url(self.SHARE_SECRET)
 
         # payload definition
