@@ -5,6 +5,12 @@ import requests
 from .decorators import refresh_token_on_expiry
 
 
+class ClientResponse:
+
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+
 class PassfortressClient:
 
     HELLO = "hello"
@@ -18,6 +24,7 @@ class PassfortressClient:
     GET_CONTAINER = "get_container"
     ADD_CONTAINER = "add_container"
     UPDATE_CONTAINER = "update_container"
+    DELETE_CONTAINER = "delete_container"
     UPDATE_SECRET = "update_secret"
     DUPLICATE_SECRET = "duplicate_secret"
     SHARE_SECRET = "share_secret"
@@ -85,22 +92,50 @@ class PassfortressClient:
         return {"Authorization": f"Bearer {self.access_token}"}
 
     @refresh_token_on_expiry
+    def _perform_request(self, endpoint_name, payload):
+
+        # build URL
+        endpoint_url = self._endpoint_url(endpoint_name)
+
+        # get API response
+        api_response = requests.post(
+            url=endpoint_url,
+            headers=self._build_authorization_bearer(),
+            json=payload,
+        )
+
+        # build SDK response
+        client_response = ClientResponse(status_code=api_response.status_code)
+
+        try:
+            response_dict = json.loads(api_response.content)
+            client_response.success = response_dict.pop("success")
+            client_response.message = response_dict.pop("message")
+            client_response.data = response_dict
+        except ValueError as error:
+            client_response.success = False
+            client_response.message = error
+
+        # return SDK response
+        return client_response
+
     def hello(self):
-        endpoint_url = self._endpoint_url(self.HELLO)
-        headers = self._build_authorization_bearer()
+
+        # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
             "greeting": "hello",
         }
-        response = requests.post(
-            url=endpoint_url,
-            headers=headers,
-            json=payload,
-        )
-        return response
 
-    @refresh_token_on_expiry
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.HELLO,
+            payload=payload
+        )
+
+        return sdk_response
+
     def get_secret(self, secret_uuid):
         """
         Retrieves a secret from the API using its UUID.
@@ -115,22 +150,22 @@ class PassfortressClient:
         Raises:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
-        endpoint_url = self._endpoint_url(self.GET_SECRET)
-        headers = self._build_authorization_bearer()
+
+        # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
             "secret": {"uuid": secret_uuid},
         }
 
-        response = requests.post(
-            url=endpoint_url,
-            headers=headers,
-            json=payload,
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.GET_SECRET,
+            payload=payload
         )
-        return response
 
-    @refresh_token_on_expiry
+        return sdk_response
+
     def add_secret(self, secret_data):
         """
         Adds a new secret to the API.
@@ -163,22 +198,21 @@ class PassfortressClient:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
 
-        endpoint_url = self._endpoint_url(self.ADD_SECRET)
-
         # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
             "secret": secret_data,
         }
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
-        )
-        return response
 
-    @refresh_token_on_expiry
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.ADD_SECRET,
+            payload=payload
+        )
+
+        return sdk_response
+
     def accept_shared_secret(self, secret_data, tmp_master_key):
         """
         Accepts a shared secret using a temporary master key.
@@ -197,7 +231,6 @@ class PassfortressClient:
         Raises:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
-        endpoint_url = self._endpoint_url(self.ADD_SECRET)
 
         # payload definition
         payload = {
@@ -206,14 +239,15 @@ class PassfortressClient:
             "master_key": self.master_key,
             "secret": secret_data,
         }
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
-        )
-        return response
 
-    @refresh_token_on_expiry
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.ADD_SECRET,
+            payload=payload
+        )
+
+        return sdk_response
+
     def get_containers(self, container_data):
         """
         Retrieves a list of containers from the API.
@@ -233,22 +267,21 @@ class PassfortressClient:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
 
-        endpoint_url = self._endpoint_url(self.GET_CONTAINERS)
-
         # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
             "container": container_data
         }
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload
-        )
-        return response
 
-    @refresh_token_on_expiry
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.GET_CONTAINERS,
+            payload=payload
+        )
+
+        return sdk_response
+
     def get_container(self, container_uuid):
         """
         Retrieves a container from the API using its UUID.
@@ -263,24 +296,23 @@ class PassfortressClient:
         Raises:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
-        endpoint_url = self._endpoint_url(self.GET_CONTAINER)
-        headers = self._build_authorization_bearer()
+
+        # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
             "container": {"uuid": container_uuid},
         }
 
-        response = requests.post(
-            url=endpoint_url,
-            headers=headers,
-            json=payload,
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.GET_CONTAINER,
+            payload=payload
         )
-        return response
 
-    @refresh_token_on_expiry
+        return sdk_response
+
     def add_container(self, container_data):
-        endpoint_url = self._endpoint_url(self.ADD_CONTAINER)
         """
         Add a new container to the API.
 
@@ -305,21 +337,17 @@ class PassfortressClient:
             "container": container_data
         }
 
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.ADD_CONTAINER,
+            payload=payload
         )
-        return response
 
-    @refresh_token_on_expiry
+        return sdk_response
+
     def update_container(self, container_data):
         """
         Updates an existing container in the API.
-
-        This method sends a POST request to the API endpoint to update an existing container. The
-        request includes an API key, a master key, and the container data in the payload for
-        authorization and container details.
 
         Args:
             container_data (dict): The container data to update, containing the following keys:
@@ -336,22 +364,50 @@ class PassfortressClient:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
 
-        endpoint_url = self._endpoint_url(self.UPDATE_CONTAINER)
-
         # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
             "container": container_data,
         }
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
-        )
-        return response
 
-    @refresh_token_on_expiry
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.UPDATE_CONTAINER,
+            payload=payload
+        )
+
+        return sdk_response
+
+    def delete_container(self, container_uuid):
+        """
+        Delete a container from the API using its UUID.
+
+        Args:
+            container_uuid (str): The UUID of the container to be deleted.
+
+        Returns:
+            requests.Response: The response object from the API containing the status of operation.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
+        # payload definition
+        payload = {
+            "api_key": self.api_key,
+            "master_key": self.master_key,
+            "container": {"uuid": container_uuid},
+        }
+
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.DELETE_CONTAINER,
+            payload=payload
+        )
+
+        return sdk_response
+
     def update_secret(self, secret_data):
         """
         Updates an existing secret in the API.
@@ -386,22 +442,21 @@ class PassfortressClient:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
 
-        endpoint_url = self._endpoint_url(self.UPDATE_SECRET)
-
         # payload definition
         payload = {
             "api_key": self.api_key,
             "master_key": self.master_key,
             "secret": secret_data,
         }
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
-        )
-        return response
 
-    @refresh_token_on_expiry
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.UPDATE_SECRET,
+            payload=payload
+        )
+
+        return sdk_response
+
     def get_secrets(self, secret_data):
         """
         Retrieves a list of secrets from the API based on the provided filters.
@@ -439,8 +494,6 @@ class PassfortressClient:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
 
-        endpoint_url = self._endpoint_url(self.GET_SECRETS)
-
         # payload definition
         payload = {
             "api_key": self.api_key,
@@ -448,14 +501,14 @@ class PassfortressClient:
             "secret": secret_data,
         }
 
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.GET_SECRETS,
+            payload=payload
         )
-        return response
 
-    @refresh_token_on_expiry
+        return sdk_response
+
     def duplicate_secret(self, secret_uuid):
         """
         Duplicates an existing secret in the API.
@@ -471,8 +524,6 @@ class PassfortressClient:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
 
-        endpoint_url = self._endpoint_url(self.DUPLICATE_SECRET)
-
         # payload definition
         payload = {
             "api_key": self.api_key,
@@ -481,14 +532,15 @@ class PassfortressClient:
                 "uuid": secret_uuid,
             },
         }
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
-        )
-        return response
 
-    @refresh_token_on_expiry
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.DUPLICATE_SECRET,
+            payload=payload
+        )
+
+        return sdk_response
+
     def share_secret(self, secret_uuid, emails_list):
         """
         Share an existing secret in the API.
@@ -505,8 +557,6 @@ class PassfortressClient:
             requests.RequestException: If the request to the API fails or encounters an error.
         """
 
-        endpoint_url = self._endpoint_url(self.SHARE_SECRET)
-
         # payload definition
         payload = {
             "api_key": self.api_key,
@@ -516,9 +566,11 @@ class PassfortressClient:
             },
             "emails": emails_list,
         }
-        response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
+
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.SHARE_SECRET,
+            payload=payload
         )
-        return response
+
+        return sdk_response
