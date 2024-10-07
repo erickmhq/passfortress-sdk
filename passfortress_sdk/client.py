@@ -20,14 +20,15 @@ class PassfortressClient:
     GET_SECRET = "get_secret"
     ADD_SECRET = "add_secret"
     ACCEPT_SHARED_SECRET = "accept_shared_secret"
+    UPDATE_SECRET = "update_secret"
+    DUPLICATE_SECRET = "duplicate_secret"
+    SHARE_SECRET = "share_secret"
+    DELETE_SECRET = "delete_secret"
     GET_CONTAINERS = "get_containers"
     GET_CONTAINER = "get_container"
     ADD_CONTAINER = "add_container"
     UPDATE_CONTAINER = "update_container"
     DELETE_CONTAINER = "delete_container"
-    UPDATE_SECRET = "update_secret"
-    DUPLICATE_SECRET = "duplicate_secret"
-    SHARE_SECRET = "share_secret"
 
     ENDPOINTS_URLS = {
         HELLO: "/api/hello/",
@@ -37,12 +38,15 @@ class PassfortressClient:
         GET_SECRET: "/api/get-secret/",
         ADD_SECRET: "/api/add-secret/",
         ACCEPT_SHARED_SECRET: "/api/accept-shared-secret/",
-        GET_CONTAINERS: "/api/get-containers/",
-        GET_CONTAINER: "/api/get-container/",
-        ADD_CONTAINER: "/api/add-container/",
         UPDATE_SECRET: "/api/update-secret/",
         DUPLICATE_SECRET: "/api/duplicate-secret/",
         SHARE_SECRET: "/api/share-secret/",
+        DELETE_SECRET: "/api/delete-secret/",
+        GET_CONTAINERS: "/api/get-containers/",
+        GET_CONTAINER: "/api/get-container/",
+        ADD_CONTAINER: "/api/add-container/",
+        UPDATE_CONTAINER: "/api/update-container/",
+        DELETE_CONTAINER: "/api/delete-container/",
     }
 
     def __init__(self, api_key, secret_key, master_key, host="app.passfortress.com"):
