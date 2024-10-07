@@ -412,6 +412,35 @@ class PassfortressClient:
 
         return sdk_response
 
+    def delete_secret(self, secret_uuid):
+        """
+        Delete a secret from the API using its UUID.
+
+        Args:
+            secret_uuid (str): The UUID of the secret to be deleted.
+
+        Returns:
+            requests.Response: The response object from the API containing the status of operation.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
+        # payload definition
+        payload = {
+            "api_key": self.api_key,
+            "master_key": self.master_key,
+            "secret": {"uuid": secret_uuid},
+        }
+
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.DELETE_SECRET,
+            payload=payload
+        )
+
+        return sdk_response
+
     def update_secret(self, secret_data):
         """
         Updates an existing secret in the API.
