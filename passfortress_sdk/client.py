@@ -246,7 +246,7 @@ class PassfortressClient:
 
         # build SDK response
         sdk_response = self._perform_request(
-            endpoint_name=self.ADD_SECRET,
+            endpoint_name=self.ACCEPT_SHARED_SECRET,
             payload=payload
         )
 
