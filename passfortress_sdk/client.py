@@ -179,6 +179,7 @@ class PassfortressClient:
 
                 - secret_type (str): **Required**. One of ["password", "envfile"].
                 - name (str): Optional. The name of the secret.
+                - file_name (str): Optional. **Required if `secret_type == "file"`**. The name of encrypted file.
                 - containers (list of dict): Optional. A list of containers to associate with the secret.
                     Each container dictionary must include:
 
@@ -187,7 +188,7 @@ class PassfortressClient:
                 - url (str): **Required if secret_type == "password"**. The URL associated with the password.
                 - value (str): The value of the secret (e.g., password, .env file content, ...).
                 - notes (str): Optional. Additional notes about the secret.
-                - identifiers (list of dict): **Required if secret_type == "password"**. A list of key-value pairs to
+                - identifiers (list of dict): **Required if `secret_type == "password"`**. A list of key-value pairs to
                 identify the secret.
                     Each identifier dictionary must include:
 
@@ -451,13 +452,13 @@ class PassfortressClient:
                 - uuid (str): **Required**. The UUID of the secret to be updated.
                 - secret_type (str): Optional. The type of the secret, either "password" or "envfile".
                 - name (str): Optional. The name of the secret.
+                - file_name (str): Optional. **Required if `secret_type == "file"`**. The name of encrypted file.
                 - containers (list of dict): Optional. A list of containers to associate with the secret.
                     Each container dictionary must include:
 
                     - uuid (str): **Required**. The UUID of the container.
 
-                - url (str): Optional. The URL associated with the secret, required only if
-                  `secret_type == "password"`.
+                - url (str): Optional. The URL associated with the secret, required only if `secret_type == "password"`.
                 - value (str): **Required**. The decrypted value of the secret.
                 - notes (str): Optional. Additional notes about the secret.
                 - identifiers (list of dict): Optional. A list of key-value pairs to identify the secret,
@@ -500,6 +501,7 @@ class PassfortressClient:
 
                 - secret_type (str): **Required**. The type of the secret, one of ["password", "envfile"].
                 - name (str): Optional. The name of the secret to filter by.
+                - file_name (str): Optional. **Required if `secret_type == "file"`**. The name of encrypted file.
                 - url (str): Optional. The URL associated with the secret, relevant only if `secret_type == "password"`.
                 - website (dict): Optional. Information about the website, relevant only if `secret_type == "password"`.
                 Contains the following keys:
