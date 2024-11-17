@@ -29,6 +29,8 @@ class PassfortressClient:
     ADD_CONTAINER = "add_container"
     UPDATE_CONTAINER = "update_container"
     DELETE_CONTAINER = "delete_container"
+    GET_GROUPS = "get_groups"
+    ADD_GROUP = "add_group"
 
     ENDPOINTS_URLS = {
         HELLO: "/api/hello/",
@@ -47,6 +49,8 @@ class PassfortressClient:
         ADD_CONTAINER: "/api/add-container/",
         UPDATE_CONTAINER: "/api/update-container/",
         DELETE_CONTAINER: "/api/delete-container/",
+        GET_GROUPS: "/api/get-groups/",
+        ADD_GROUP: "/api/add-group/",
     }
 
     def __init__(self, api_key, secret_key, master_key, host="app.passfortress.com"):
@@ -413,6 +417,77 @@ class PassfortressClient:
 
         return sdk_response
 
+    def get_groups(self, group_data):
+        """
+        Retrieves a list of groups from the API.
+
+        Args:
+            group_data (dict): The group data used to filter the results, containing
+            the following keys:
+
+                - name (str): Optional. The name of the group to filter by.
+                - description (str): Optional. The description (partial or total) of the group to filter by.
+
+        Returns:
+            requests.Response: The response object from the API containing the list of groups
+            matching the provided filters or an error message if the request fails.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
+        # payload definition
+        payload = {
+            "api_key": self.api_key,
+            "master_key": self.master_key,
+            "group": group_data
+        }
+
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.GET_GROUPS,
+            payload=payload
+        )
+
+        return sdk_response
+
+    def add_group(self, group_data):
+        """
+        Add a new group to the API.
+
+        Args:
+            group_data (dict): The group data to create, containing the following keys:
+                - parent_group (dict): Optional. A high level group, containing the following keys:
+                    - uuid (str): **Required**. The UUID of the parent group.
+                - name (str): **Required**. The name of the group.
+                - description (str): Optional. A description of the group.
+                - logo (dict): Optional. A base64 encoded logo image, containing the following keys:
+                    - file_name(str): **Required**. The name of the logo image.
+                    - content(str): **Required**. The image as a base64 encoded string.
+
+        Returns:
+            requests.Response: The response object from the API containing the result of the
+            add operation, such as success confirmation or an error message.
+
+        Raises:
+            requests.RequestException: If the request to the API fails or encounters an error.
+        """
+
+        # payload definition
+        payload = {
+            "api_key": self.api_key,
+            "master_key": self.master_key,
+            "group": group_data
+        }
+
+        # build SDK response
+        sdk_response = self._perform_request(
+            endpoint_name=self.ADD_GROUP,
+            payload=payload
+        )
+
+        return sdk_response
+
     def delete_secret(self, secret_uuid):
         """
         Delete a secret from the API using its UUID.
@@ -508,7 +583,7 @@ class PassfortressClient:
                     - uuid (str): Optional. The UUID of the website.
                     - hostname (str): Optional. The hostname of the website.
                     - login_url (str): Optional. The login URL for the website.
-                    - automatic_password_change (bool): Optional. Whether the website supports automatic password change.
+                    - automatic_password_change (bool): Optional. Whether the website supports automatic password change
                 - containers (list of dict): Optional. A list of containers associated with the secret.
                 Each container dictionary can include:
                     - uuid (str): Optional. The UUID of the container.
