@@ -74,12 +74,19 @@ class PassfortressClient:
     def _auth_request_token(self):
         endpoint_url = self._endpoint_url(self.REQUEST_TOKEN)
 
-        json_dict = {"api_key": self.api_key, "secret_key": self.secret_key}
-        response = requests.post(
-            url=endpoint_url,
-            json=json_dict,
-        )
-        return json.loads(response.content)["access_token"]
+        json_dict = {
+            "api_key": self.api_key,
+            "secret_key": self.secret_key
+        }
+        try:
+            response = requests.post(
+                url=endpoint_url,
+                json=json_dict,
+            )
+            return json.loads(response.content)["access_token"]
+        except Exception as error:
+            print(error)
+            return None
 
     def _auth_refresh_token(self):
         endpoint_url = self._endpoint_url(self.REFRESH_TOKEN)
@@ -87,14 +94,18 @@ class PassfortressClient:
         json_dict = {
             "api_key": self.api_key,
             "secret_key": self.secret_key,
-            "access_token": self.access_token,
+            "access_token": self.access_token
         }
-        response = requests.post(
-            url=endpoint_url,
-            json=json_dict,
-        )
-        self.access_token = json.loads(response.content)["access_token"]
-        return self.access_token
+        try:
+            response = requests.post(
+                url=endpoint_url,
+                json=json_dict,
+            )
+            self.access_token = json.loads(response.content)["access_token"]
+            return self.access_token
+        except Exception as error:
+            print(error)
+            return None
 
     def _build_authorization_bearer(self):
         return {"Authorization": f"Bearer {self.access_token}"}
