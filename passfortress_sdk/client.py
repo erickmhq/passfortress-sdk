@@ -1,6 +1,9 @@
 import json
+from typing import Optional, Tuple
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from .decorators import refresh_token_on_expiry
 
@@ -53,13 +56,79 @@ class PassfortressClient:
         ADD_GROUP: "/api/add-group/",
     }
 
-    def __init__(self, api_key, secret_key, master_key, host="app.passfortress.com"):
+    DEFAULT_RETRIES_TOTAL = 2
+    DEFAULT_RETRIES_CONNECT = 2
+    DEFAULT_RETRIES_READ = 2
+    DEFAULT_BACKOFF_FACTOR = 0.3
+    DEFAULT_STATUS_FORCELIST = (429, 500, 502, 503, 504)
+    DEFAULT_ALLOWED_METHODS = frozenset(["GET", "POST"])
+    DEFAULT_POOL_CONNECTIONS = 10
+    DEFAULT_POOL_MAXSIZE = 10
+    DEFAULT_TIMEOUT: Tuple[float, float] = (2.0, 2.0)  # (connect, read)
+
+    def __init__(
+        self,
+        api_key, 
+            secret_key, 
+            master_key, 
+            host="app.passfortress.com",
+            timeout: Optional[Tuple[float, float]] = None,
+            retries_total: int = DEFAULT_RETRIES_TOTAL,
+            retries_connect: int = DEFAULT_RETRIES_CONNECT,
+            retries_read: int = DEFAULT_RETRIES_READ,
+            backoff_factor: float = DEFAULT_BACKOFF_FACTOR,
+            pool_connections: int = DEFAULT_POOL_CONNECTIONS,
+            pool_maxsize: int = DEFAULT_POOL_MAXSIZE,
+
+    ):
         self.api_key = api_key
         self.secret_key = secret_key
         self.master_key = master_key
         self.host = host
         self.base_url = self._build_base_url()
+
+        # Networking configuration
+        self._timeout = timeout or self.DEFAULT_TIMEOUT
+        self._session = self._create_session(
+            retries_total=retries_total,
+            retries_connect=retries_connect,
+            retries_read=retries_read,
+            backoff_factor=backoff_factor,
+            pool_connections=pool_connections,
+            pool_maxsize=pool_maxsize,
+        )
+
         self.access_token = self._auth_request_token()
+
+    def _create_session(
+            self,
+            retries_total: int,
+            retries_connect: int,
+            retries_read: int,
+            backoff_factor: float,
+            pool_connections: int,
+            pool_maxsize: int,
+    ) -> requests.Session:
+        session = requests.Session()
+        retries = Retry(
+            total=retries_total,
+            connect=retries_connect,
+            read=retries_read,
+            backoff_factor=backoff_factor,
+            status_forcelist=self.DEFAULT_STATUS_FORCELIST,
+            allowed_methods=self.DEFAULT_ALLOWED_METHODS,
+            raise_on_status=False,  # do not raise automatically on status codes, we handle manually
+        )
+        adapter = HTTPAdapter(
+            max_retries=retries,
+            pool_connections=pool_connections,
+            pool_maxsize=pool_maxsize,
+        )
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        # Optionally set a common header to encourage keep-alive; requests already keeps alive by default.
+        session.headers.update({"Connection": "keep-alive"})
+        return session
 
     def _build_base_url(self):
         protocol = "http"
@@ -79,11 +148,13 @@ class PassfortressClient:
             "secret_key": self.secret_key
         }
         try:
-            response = requests.post(
+            response = self._session.post(
                 url=endpoint_url,
                 json=json_dict,
+                timeout=self._timeout,
             )
-            return json.loads(response.content)["access_token"]
+            response.raise_for_status()
+            return response.json().get("access_token")
         except Exception as error:
             print(error)
             return None
@@ -97,11 +168,13 @@ class PassfortressClient:
             "access_token": self.access_token
         }
         try:
-            response = requests.post(
+            response = self._session.post(
                 url=endpoint_url,
                 json=json_dict,
+                timeout=self._timeout,
             )
-            self.access_token = json.loads(response.content)["access_token"]
+            response.raise_for_status()
+            self.access_token = response.json().get("access_token")
             return self.access_token
         except Exception as error:
             print(error)
@@ -116,27 +189,37 @@ class PassfortressClient:
         # build URL
         endpoint_url = self._endpoint_url(endpoint_name)
 
-        # get API response
-        api_response = requests.post(
-            url=endpoint_url,
-            headers=self._build_authorization_bearer(),
-            json=payload,
-        )
-
-        # build SDK response
-        client_response = ClientResponse(status_code=api_response.status_code)
-
+        # get API response using a pooled, retried session with explicit timeouts
         try:
-            response_dict = json.loads(api_response.content)
-            client_response.success = response_dict.pop("success")
-            client_response.message = response_dict.pop("message")
-            client_response.data = response_dict
-        except ValueError as error:
-            client_response.success = False
-            client_response.message = error
+            api_response = self._session.post(
+                url=endpoint_url,
+                headers=self._build_authorization_bearer(),
+                json=payload,
+                timeout=self._timeout,
+            )
 
-        # return SDK response
-        return client_response
+            # build SDK response
+            client_response = ClientResponse(status_code=api_response.status_code)
+
+            try:
+                response_dict = api_response.json()
+                client_response.success = response_dict.pop("success", False)
+                client_response.message = response_dict.pop("message", "")
+                client_response.data = response_dict
+            except ValueError as error:
+                client_response.success = False
+                client_response.message = error
+
+            # return SDK response
+            return client_response
+
+        except requests.RequestException as error:
+            # Network-level issue (timeout, connection error, etc.)
+            client_response = ClientResponse(status_code=0)
+            client_response.success = False
+            client_response.message = str(error)
+            client_response.data = {}
+            return client_response
 
     def hello(self):
 
@@ -695,3 +778,14 @@ class PassfortressClient:
         )
 
         return sdk_response
+
+    def close(self) -> None:
+        """
+        Close the underlying HTTP session and free pooled connections.
+        Call this when you're done with the client (e.g., at application shutdown).
+        """
+        try:
+            self._session.close()
+        except Exception:
+            # Silently ignore close errors; session close is best-effort.
+            pass
